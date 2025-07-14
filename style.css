@@ -13,7 +13,7 @@ body {
     width: 150px;
     border: 1px solid #000;
     padding: 10px;
-    padding: 10px;
+    margin: 10px;
     flex-grow: 1;
 }
 
@@ -25,13 +25,6 @@ body {
     position: relative;
 }
 
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-    20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-}
-
 #pauseButton {
     padding: 5px 10px;
     border-radius: 3px;
@@ -39,4 +32,41 @@ body {
     border: 1px solid black;
     color: black;
     cursor: pointer;
+}
+
+.pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.pause-text {
+    color: white;
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.goal-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: red;
+    z-index: 100;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
 }
