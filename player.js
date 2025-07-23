@@ -1,18 +1,29 @@
 // player.js
 
 export class Player {
-    constructor(ctx, x, y, size, speed, name) {
-        this.ctx = ctx; // Store the context
+    constructor(x, y, size, speed, name, color) {
+        // coordinates
         this.x = x;
         this.y = y;
+
+        // initial coordinates used in the reset() method
+        this.startX = x;
+        this.startY = y;
+
         this.size = size;
         this.speed = speed;
         this.name = name;
+        this.color = color;
     }
 
-    draw() {
-        this.ctx.fillStyle = 'white';
-        this.ctx.fillRect(this.x, this.y, this.size, this.size);
+    reset() {
+        this.x = this.startX;
+        this.y = this.startY;
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
     }
 
     get left() {
@@ -30,12 +41,26 @@ export class Player {
 }
 
 export class PlayerAI extends Player {
-    constructor(ctx, x, y, size, speed, name) {
-        super(ctx, x, y, size, speed, name); // Call the parent constructor
+    constructor(x, y, size, speed, name, color, level) {
+        super(x, y, size, speed, name, color);
+        this.level = level; // easy | normal | hard
     }
 
     update(ball) {
-        const moveTowardsBall = Math.random() < 0.8; // 80% chance to move towards the ball
+        let moveTowardsBall;
+
+        switch (this.level) {
+            case 'easy':
+                moveTowardsBall = Math.random() < 0.2; // 20% chance to move towards the ball
+                break;
+            case 'normal':
+                moveTowardsBall = Math.random() < 0.5; // 50% chance to move towards the ball
+                break;
+            case 'hard':
+                moveTowardsBall = Math.random() < 0.8; // 80% chance to move towards the ball
+                break;
+        }
+
         if (moveTowardsBall) {
             if (ball.y < this.y) {
                 this.y -= this.speed; // Move up
@@ -43,6 +68,7 @@ export class PlayerAI extends Player {
                 this.y += this.speed; // Move down
             }
         }
+
         return this;
     }
 }

@@ -1,63 +1,68 @@
-// xxx.js
+// detect.js
 
-export function detectCollision(first, second, delta) {
-    // console.log(delta);
-    const leftSideCollisionBox = {
-        left: second.left,
-        right: second.left + delta,
-        top: second.top,
-        bottom: second.bottom,
-    };
-    const rightSideCollisionBox = {
-        left: second.right - delta,
-        right: second.right,
-        top: second.top,
-        bottom: second.bottom,
-    };
-    const topSideCollisionBox = {
-        left: second.left,
-        right: second.right,
-        top: second.top,
-        bottom: second.top + delta,
-    };
-    const bottomSideCollisionBox = {
-        left: second.left,
-        right: second.right,
-        top: second.bottom - delta,
-        bottom: second.bottom,
-    };
+export function isColliding(rect1, rect2) {
+    return (
+        rect1.x < rect2.x + rect2.width &&
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.height &&
+        rect1.y + rect1.height > rect2.y
+    );
+}
 
-    const boxCollision = (object, box) => {
-        // console.log(object, box);
-        return (
-            ((box.top <= object.top && object.top <= box.bottom) ||
-                (box.top <= object.bottom && object.bottom <= box.bottom)) &&
-            ((box.left <= object.left && object.left <= box.right) ||
-                (box.left <= object.right && object.right <= box.right))
-        );
-    };
+export function getCollisionSide(rect1, rect2) {
+    if (!isColliding(rect1, rect2)) {
+        return null; // Нет столкновения
+    }
 
-    const leftSideCollision = boxCollision(first, leftSideCollisionBox);
-    const rightSideCollision = boxCollision(first, rightSideCollisionBox);
-    const topSideCollision = boxCollision(first, topSideCollisionBox);
-    const bottomSideCollision = boxCollision(first, bottomSideCollisionBox);
+    const dx = rect1.x + rect1.width / 2 - (rect2.x + rect2.width / 2);
+    const dy = rect1.y + rect1.height / 2 - (rect2.y + rect2.height / 2);
 
-    if (leftSideCollision) return { isCollision: true, collisionType: 'left' };
-    if (rightSideCollision) return { isCollision: true, collisionType: 'right' };
-    if (topSideCollision) return { isCollision: true, collisionType: 'top' };
-    if (bottomSideCollision) return { isCollision: true, collisionType: 'bottom' };
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
 
-    // if (
-    //     ((second.top <= first.top && first.top <= second.bottom) ||
-    //         (second.top <= first.bottom && first.bottom <= second.bottom)) &&
-    //     ((second.left <= first.left && first.left <= second.right) ||
-    //         (second.left <= first.right && first.right <= second.right))
-    // ) {
-    //     return { isCollision: true, collisionType: 'all' };
-    // }
+    if (absDx > absDy) {
+        return dx > 0 ? 'left' : 'right'; // Столкновение с левой или правой стороны
+    } else {
+        return dy > 0 ? 'bottom' : 'top'; // Столкновение с верхней или нижней стороны
+    }
+}
 
-    return {
-        isCollision: false,
-        collisionType: undefined,
-    };
+export function isCollidingCircleSquare(circle, square) {
+    // Определяем ближайшую точку на квадрате
+    const nearestX = Math.max(square.x, Math.min(circle.x, square.x + square.size));
+    const nearestY = Math.max(square.y, Math.min(circle.y, square.y + square.size));
+
+    // Вычисляем расстояние между центром круга и ближайшей точкой
+    const dx = circle.x - nearestX;
+    const dy = circle.y - nearestY;
+    const distanceSquared = dx * dx + dy * dy;
+
+    // Проверяем на столкновение
+    if (distanceSquared < circle.radius * circle.radius) {
+        return true; // Столкновение произошло
+    } else {
+        return false; // Столкновения нет
+    }
+}
+
+export function getCollisionSideCircleSquare(circle, square) {
+    // Проверяем на столкновение
+    if (!isCollidingCircleSquare(circle, square)) {
+        return null; // Нет столкновения
+    }
+
+    // Определяем ближайшую точку на квадрате
+    const nearestX = Math.max(square.x, Math.min(circle.x, square.x + square.size));
+    const nearestY = Math.max(square.y, Math.min(circle.y, square.y + square.size));
+
+    // Вычисляем вектор столкновения
+    const collisionVectorX = circle.x - nearestX;
+    const collisionVectorY = circle.y - nearestY;
+
+    // Определяем сторону столкновения
+    if (Math.abs(collisionVectorX) > Math.abs(collisionVectorY)) {
+        return collisionVectorX > 0 ? 'left' : 'right';
+    } else {
+        return collisionVectorY > 0 ? 'top' : 'bottom';
+    }
 }

@@ -1,16 +1,23 @@
 // ball.js
 
 export class Ball {
-    constructor(ctx, x, y, radius, speed) {
-        this.ctx = ctx; // Store the context
-        this.initialX = x; // Store initial x position
-        this.initialY = y; // Store initial y position
+    constructor(x, y, radius, speed, color) {
+        // coordinates
         this.x = x;
         this.y = y;
         this.radius = radius;
-        // this.speed = speed;
+
+        // speed
         this.dx = speed;
         this.dy = speed;
+
+        // initial coordinates and speed (for reset)
+        this.initialX = x;
+        this.initialY = y;
+        this.initialSpeed = speed;
+
+        // color
+        this.color = color;
     }
 
     update() {
@@ -19,17 +26,20 @@ export class Ball {
     }
 
     reset() {
-        this.x = this.initialX; // Reset to initial x position
-        this.y = this.initialY; // Reset to initial y position
-        this.dx = Math.random() < 0.5 ? 5 : -5;
-        this.dy = Math.random() < 0.5 ? 5 : -5;
+        // Reset to initial position
+        this.x = this.initialX;
+        this.y = this.initialY;
+
+        // set speed
+        this.dx = Math.random() < 0.5 ? this.initialSpeed : -this.initialSpeed;
+        this.dy = Math.random() < 0.5 ? this.initialSpeed : -this.initialSpeed;
     }
 
-    draw() {
-        this.ctx.beginPath();
-        this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'white';
-        this.ctx.fill();
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
     }
 
     // these props are for collision detection
@@ -44,6 +54,9 @@ export class Ball {
     }
     get bottom() {
         return this.y + this.radius;
+    }
+    get size() {
+        return this.radius * 2;
     }
 
     bounceX() {
