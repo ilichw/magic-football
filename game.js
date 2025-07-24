@@ -26,17 +26,19 @@ class Game {
         );
 
         // create player instances
+        const player1Color = getRandomElement(config.playerColors);
         this.player1 = new PlayerAI(
             /* x */ 50,
             /* y */ this.gameField.height / 2,
             config.playerSize,
             config.playerSpeed,
             'player 1',
-            getRandomElement(config.playerColors),
+            player1Color,
             getRandomElement(config.playerDifficultyLevels)
         );
         this.score1 = 0;
 
+        const filteredColors = config.playerColors.filter((color) => color !== player1Color);
         this.player2 = config.allBots
             ? new PlayerAI(
                   /* x */ this.gameField.width - 50 - config.playerSize,
@@ -44,7 +46,7 @@ class Game {
                   config.playerSize,
                   config.playerSpeed,
                   'player 2',
-                  getRandomElement(config.playerColors),
+                  getRandomElement(filteredColors),
                   getRandomElement(config.playerDifficultyLevels)
               )
             : new Player(
@@ -53,7 +55,7 @@ class Game {
                   config.playerSize,
                   config.playerSpeed,
                   'player 2',
-                  getRandomElement(config.playerColors)
+                  getRandomElement(filteredColors)
               );
         this.score2 = 0;
 
