@@ -16,12 +16,20 @@ export class Player {
         this.color = color;
     }
 
+    get isControlledByAI() {
+        return false;
+    }
+
     reset() {
         this.x = this.startX;
         this.y = this.startY;
     }
 
     draw(ctx) {
+        // draw player's name
+        ctx.fillText(this.name, this.x, this.y - 10);
+
+        // draw skin
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.size, this.size);
     }
@@ -41,15 +49,29 @@ export class Player {
 }
 
 export class PlayerAI extends Player {
-    constructor(x, y, size, speed, name, color, level) {
+    constructor(x, y, size, speed, name, color, difficulty) {
         super(x, y, size, speed, name, color);
-        this.level = level; // easy | normal | hard
+        this.difficulty = difficulty;
+    }
+
+    get isControlledByAI() {
+        return true;
+    }
+
+    draw(ctx) {
+        // draw player's name
+        const text = `${this.name} (${this.difficulty})`;
+        ctx.fillText(text, this.x, this.y - 10);
+
+        // draw skin
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
     }
 
     update(ball) {
         let moveTowardsBall;
 
-        switch (this.level) {
+        switch (this.difficulty) {
             case 'easy':
                 moveTowardsBall = Math.random() < 0.2; // 20% chance to move towards the ball
                 break;

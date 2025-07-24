@@ -5,6 +5,7 @@ import { GoalArea } from './goalArea.js';
 import { isCollidingCircleSquare } from './detect.js';
 import { GameField } from './gameField.js';
 import { SoundEngine } from './soundEngine.js';
+import { getRandomElement } from './helpers.js';
 
 class Game {
     constructor() {
@@ -31,20 +32,29 @@ class Game {
             config.playerSize,
             config.playerSpeed,
             'player 1',
-            config.playerColors[0],
-            'easy'
+            getRandomElement(config.playerColors),
+            getRandomElement(config.playerDifficultyLevels)
         );
         this.score1 = 0;
 
-        this.player2 = new PlayerAI(
-            /* x */ this.gameField.width - 50 - config.playerSize,
-            /* y */ this.gameField.height / 2,
-            config.playerSize,
-            config.playerSpeed,
-            'player 2',
-            config.playerColors[1],
-            'normal'
-        );
+        this.player2 = config.allBots
+            ? new PlayerAI(
+                  /* x */ this.gameField.width - 50 - config.playerSize,
+                  /* y */ this.gameField.height / 2,
+                  config.playerSize,
+                  config.playerSpeed,
+                  'player 2',
+                  getRandomElement(config.playerColors),
+                  getRandomElement(config.playerDifficultyLevels)
+              )
+            : new Player(
+                  /* x */ this.gameField.width - 50 - config.playerSize,
+                  /* y */ this.gameField.height / 2,
+                  config.playerSize,
+                  config.playerSpeed,
+                  'player 2',
+                  getRandomElement(config.playerColors)
+              );
         this.score2 = 0;
 
         this.players = [this.player1, this.player2];
@@ -117,25 +127,12 @@ class Game {
         // update ball position
         this.ball.update();
 
-        // update player 1 (bot) position
-        if (this.player1 !== undefined) {
-            const { x, y } = this.player1.update(this.ball); // Control Player 1 with AI
-
-            // Keep within field boundaries
-            this.player1.y = Math.max(
-                0,
-                Math.min(y, this.gameField.height - this.player1.size)
-            );
-        }
-
-        // update player 2 (bot) position
-        if (this.player2 !== undefined) {
-            const { x, y } = this.player2.update(this.ball); // Control Player 1 with AI
-            this.player2.y = Math.max(
-                0,
-                Math.min(y, this.gameField.height - this.player2.size)
-            ); // Keep within field boundaries
-        }
+        // update ai players' position
+        const bots = this.players.filter((player) => player.isControlledByAI);
+        bots.forEach((bot) => {
+            const { x, y } = bot.update(this.ball);
+            bot.y = Math.max(0, Math.min(y, this.gameField.height - bot.size)); // Keep within field boundaries
+        });
 
         // collisions detecting
         if (this.detectBallCollisionWithWalls()) {
