@@ -44,11 +44,11 @@ class Game {
         this.goalAreas = [this.goalAreaLeft, this.goalAreaRight];
 
         // add goal areas to static and visible objects
-        this.static.concat(this.goalAreas);
-        this.visibles = this.visibles.concat(this.goalAreas);
+        this.static.push(...this.goalAreas);
+        this.visibles.push(...this.goalAreas);
 
         // dynamic objects
-        // dynamic means they (may) update their position on each step of the game loop
+        // (may update their position on each step of the game loop)
         this.dynamic = [];
 
         this.ball = new Ball(
@@ -99,8 +99,8 @@ class Game {
         this.players = [this.player1, this.player2];
 
         // add all players to dynamic and visible objects
-        this.dynamic.concat(this.players);
-        this.visibles = this.visibles.concat(this.players);
+        this.dynamic.push(...this.players);
+        this.visibles.push(...this.players);
 
         // init sound engine
         this.soundEngine = new SoundEngine(config.soundMap, config.soundOn);
@@ -117,12 +117,13 @@ class Game {
         this.celebratingDuration = config.gameCelebratingDuration;
         this.countdownDuration = config.countdownDuration;
 
-        // keyboard management
-        document.addEventListener('keydown', (event) => this.handleKeydownEvent(event));
-
         // start game
         this.ctx = this.initCanvasContext('2d');
         this.gameLoop();
+    }
+
+    initEventListeners() {
+        document.addEventListener('keydown', (event) => this.handleKeydownEvent(event));
     }
 
     initCanvasContext(contextType) {
@@ -382,3 +383,4 @@ class Game {
 
 // Start the game
 const game = new Game();
+game.initEventListeners();
