@@ -98,6 +98,9 @@ class Game {
 
         this.players = [this.player1, this.player2];
 
+        // init spells
+        this.spells = [];
+
         // add all players to dynamic and visible objects
         this.dynamic.push(...this.players);
         this.visibles.push(...this.players);
@@ -180,61 +183,53 @@ class Game {
     checkCollisions() {
         const collisions = [];
 
-        // ball x walls
-        if (this.ball.top <= 0) {
+        const ballWallCollisions = this.checkBallWallCollision(this.ball, this.gameField);
+        collisions.push(...ballWallCollisions);
+
+        this.players.forEach((player) => {
+            const ballPlayerCollisions = this.checkBallPlayerCollision(this.ball, player);
+            collisions.push(...ballPlayerCollisions);
+        });
+
+        return collisions;
+    }
+
+    checkBallWallCollision(ball, gameField) {
+        const collisions = [];
+
+        if (ball.top <= 0) {
             collisions.push({ type: 'ball x top wall' });
-        }
-
-        if (this.ball.right >= this.gameField.width) {
+        } else if (ball.right >= gameField.width) {
             collisions.push({ type: 'ball x right wall' });
-        }
-
-        if (this.ball.bottom >= this.gameField.height) {
+        } else if (ball.bottom >= gameField.height) {
             collisions.push({ type: 'ball x bottom wall' });
-        }
-
-        if (this.ball.left <= 0) {
+        } else if (ball.left <= 0) {
             collisions.push({ type: 'ball x left wall' });
         }
 
-        // ball x players
-        this.players.forEach((player) => {
-            if (player.left <= this.ball.x && this.ball.x <= player.right) {
-                if (
-                    this.ball.bottom >= player.top &&
-                    this.ball.bottom < player.bottom &&
-                    this.ball.dy > 0
-                ) {
-                    collisions.push({ type: 'ball x player top', player });
-                }
+        return collisions;
+    }
 
-                if (
-                    this.ball.top <= player.bottom &&
-                    this.ball.top > player.top &&
-                    this.ball.dy < 0
-                ) {
-                    collisions.push({ type: 'ball x player bottom', player });
-                }
+    checkBallPlayerCollision(ball, player) {
+        const collisions = [];
+
+        // Проверка коллизий по вертикали
+        if (player.left <= ball.x && ball.x <= player.right) {
+            if (ball.bottom >= player.top && ball.bottom < player.bottom && ball.dy > 0) {
+                collisions.push({ type: 'ball x player top', player });
+            } else if (ball.top <= player.bottom && ball.top > player.top && ball.dy < 0) {
+                collisions.push({ type: 'ball x player bottom', player });
             }
+        }
 
-            if (player.top <= this.ball.y && this.ball.y <= player.bottom) {
-                if (
-                    this.ball.right >= player.left &&
-                    this.ball.right < player.right &&
-                    this.ball.dx > 0
-                ) {
-                    collisions.push({ type: 'ball x player left', player });
-                }
-
-                if (
-                    this.ball.left <= player.right &&
-                    this.ball.left > player.left &&
-                    this.ball.dx < 0
-                ) {
-                    collisions.push({ type: 'ball x player right', player });
-                }
+        // Проверка коллизий по горизонтали
+        if (player.top <= ball.y && ball.y <= player.bottom) {
+            if (ball.right >= player.left && ball.right < player.right && ball.dx > 0) {
+                collisions.push({ type: 'ball x player left', player });
+            } else if (ball.left <= player.right && ball.left > player.left && ball.dx < 0) {
+                collisions.push({ type: 'ball x player right', player });
             }
-        });
+        }
 
         return collisions;
     }
@@ -313,13 +308,6 @@ class Game {
 
         // draw objects
         this.visibles.forEach((visible) => visible.draw(this.ctx));
-
-        if (this.collisions !== undefined) {
-            this.collisions.forEach((collision) => {
-                this.ctx.fillStyle = 'red';
-                this.ctx.fillRect(collision.x, collision.y, 5, 5);
-            });
-        }
 
         this.drawScore();
     }
