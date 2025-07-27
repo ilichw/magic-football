@@ -27,6 +27,7 @@ export class Player {
 
     draw(ctx) {
         // draw player's name
+        ctx.fillStyle = 'white';
         ctx.fillText(this.name, this.x, this.y - 10);
 
         // draw skin
@@ -46,6 +47,12 @@ export class Player {
     get bottom() {
         return this.y + this.size;
     }
+    get height() {
+        return this.size;
+    }
+    get width() {
+        return this.size;
+    }
 }
 
 export class PlayerAI extends Player {
@@ -60,6 +67,7 @@ export class PlayerAI extends Player {
 
     draw(ctx) {
         // draw player's name
+        ctx.fillStyle = 'white';
         const text = `${this.name} (${this.difficulty})`;
         ctx.fillText(text, this.x, this.y - 10);
 

@@ -58,6 +58,12 @@ export class Ball {
     get size() {
         return this.radius * 2;
     }
+    get height() {
+        return this.size;
+    }
+    get width() {
+        return this.size;
+    }
 
     bounceX() {
         this.dx = -this.dx;

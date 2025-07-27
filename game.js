@@ -2,30 +2,67 @@ import { Ball } from './ball.js';
 import { PlayerAI, Player } from './player.js';
 import { config } from './config.js';
 import { GoalArea } from './goalArea.js';
-import { isCollidingCircleSquare } from './detect.js';
 import { GameField } from './gameField.js';
 import { SoundEngine } from './soundEngine.js';
 import { getRandomElement } from './helpers.js';
 
 class Game {
     constructor() {
-        // create game field instance
+        // visible objects are drawn on each step of the game loop
+        this.visibles = [];
+
+        // static objects
+        // (never update their position)
+        this.static = [];
+
         this.gameField = new GameField(
             config.fieldHeight,
             config.fieldWidth,
-            config.fieldColor
+            config.ballSize, // player zone offset
+            config.fieldColor,
+            config.playerZoneBorderColor
         );
 
-        // create ball instance
+        // add game field to static and visible objects
+        this.static.push(this.gameField);
+        this.visibles.push(this.gameField);
+
+        this.goalAreaLeft = new GoalArea(
+            /* x */ 0,
+            /* y */ (this.gameField.height - config.goalAreaHeight) / 2,
+            /* width */ config.ballSize,
+            config.goalAreaHeight
+        );
+
+        this.goalAreaRight = new GoalArea(
+            this.gameField.width - config.ballSize,
+            (this.gameField.height - config.goalAreaHeight) / 2,
+            config.ballSize,
+            config.goalAreaHeight
+        );
+
+        this.goalAreas = [this.goalAreaLeft, this.goalAreaRight];
+
+        // add goal areas to static and visible objects
+        this.static.concat(this.goalAreas);
+        this.visibles = this.visibles.concat(this.goalAreas);
+
+        // dynamic objects
+        // dynamic means they (may) update their position on each step of the game loop
+        this.dynamic = [];
+
         this.ball = new Ball(
             /* x */ this.gameField.width / 2,
             /* y */ this.gameField.height / 2,
-            config.ballSize,
+            /* radius */ config.ballSize / 2,
             config.ballSpeed,
             config.ballColor
         );
 
-        // create player instances
+        // add ball to dynamic and visible objects
+        this.dynamic.push(this.ball);
+        this.visibles.push(this.ball);
+
         const player1Color = getRandomElement(config.playerColors);
         this.player1 = new PlayerAI(
             /* x */ 50,
@@ -61,25 +98,13 @@ class Game {
 
         this.players = [this.player1, this.player2];
 
-        // Create goal area instances
-        this.goalAreaLeft = new GoalArea(
-            /* x */ 0,
-            /* y */ (this.gameField.height - config.goalAreaHeight) / 2,
-            config.goalAreaWidth,
-            config.goalAreaHeight
-        );
-
-        this.goalAreaRight = new GoalArea(
-            this.gameField.width - config.goalAreaWidth,
-            (this.gameField.height - config.goalAreaHeight) / 2,
-            config.goalAreaWidth,
-            config.goalAreaHeight
-        );
-
-        this.goalAreas = [this.goalAreaLeft, this.goalAreaRight];
+        // add all players to dynamic and visible objects
+        this.dynamic.concat(this.players);
+        this.visibles = this.visibles.concat(this.players);
 
         // init sound engine
         this.soundEngine = new SoundEngine(config.soundMap, config.soundOn);
+
         // game over options
         this.isOver = false;
 
@@ -106,50 +131,41 @@ class Game {
     }
 
     gameLoop() {
+        // check for the end of the game
+        if (this.checkGameOver()) {
+            this.gameOver();
+            return;
+        }
+
         // update game
         if (!(this.isPaused || this.isCelebrating || this.isOver)) {
             this.updateGame();
         }
+
+        // update display
         this.draw();
         requestAnimationFrame(() => this.gameLoop());
     }
 
     updateGame() {
-        // check for the end of the game
-        if (this.checkGameOver()) {
-            this.gameOver();
-        }
-
         // check for goals
-        if (this.detectGoal()) {
+        if (this.resolveGoals()) {
             this.soundEngine.play('goal');
             this.startCelebrating();
         }
 
-        // update ball position
-        this.ball.update();
+        // check for collisions
+        const collisions = this.checkCollisions();
 
-        // update ai players' position
-        const bots = this.players.filter((player) => player.isControlledByAI);
-        bots.forEach((bot) => {
-            const { x, y } = bot.update(this.ball);
-            bot.y = Math.max(0, Math.min(y, this.gameField.height - bot.size)); // Keep within field boundaries
-        });
-
-        // collisions detecting
-        if (this.detectBallCollisionWithWalls()) {
-            this.soundEngine.play('collision');
-        }
-
-        if (this.detectCollisions()) {
-            this.soundEngine.play('collision');
+        if (collisions.length) {
+            this.collisionResolving(collisions);
+        } else {
+            this.defaultUpdate();
         }
     }
 
     checkGameOver() {
-        if (config.endlessGame) {
-            return false;
-        }
+        if (config.endlessGame) return false;
         return this.score1 >= config.finalScore || this.score2 >= config.finalScore;
     }
 
@@ -160,98 +176,167 @@ class Game {
         // Optionally reset the game or provide a restart option
     }
 
-    detectCollisions() {
-        return (
-            [this.player1, this.player2]
-                .map((player) => {
-                    this.resolveCollision(this.ball, player);
-                })
-                .filter((x) => x).length !== 0
-        );
+    checkCollisions() {
+        const collisions = [];
+
+        // ball x walls
+        if (this.ball.top <= 0) {
+            collisions.push({ type: 'ball x top wall' });
+        }
+
+        if (this.ball.right >= this.gameField.width) {
+            collisions.push({ type: 'ball x right wall' });
+        }
+
+        if (this.ball.bottom >= this.gameField.height) {
+            collisions.push({ type: 'ball x bottom wall' });
+        }
+
+        if (this.ball.left <= 0) {
+            collisions.push({ type: 'ball x left wall' });
+        }
+
+        // ball x players
+        this.players.forEach((player) => {
+            if (player.left <= this.ball.x && this.ball.x <= player.right) {
+                if (
+                    this.ball.bottom >= player.top &&
+                    this.ball.bottom < player.bottom &&
+                    this.ball.dy > 0
+                ) {
+                    collisions.push({ type: 'ball x player top', player });
+                }
+
+                if (
+                    this.ball.top <= player.bottom &&
+                    this.ball.top > player.top &&
+                    this.ball.dy < 0
+                ) {
+                    collisions.push({ type: 'ball x player bottom', player });
+                }
+            }
+
+            if (player.top <= this.ball.y && this.ball.y <= player.bottom) {
+                if (
+                    this.ball.right >= player.left &&
+                    this.ball.right < player.right &&
+                    this.ball.dx > 0
+                ) {
+                    collisions.push({ type: 'ball x player left', player });
+                }
+
+                if (
+                    this.ball.left <= player.right &&
+                    this.ball.left > player.left &&
+                    this.ball.dx < 0
+                ) {
+                    collisions.push({ type: 'ball x player right', player });
+                }
+            }
+        });
+
+        return collisions;
     }
 
-    resolveCollision(ball, player) {
-        // Проверяем на столкновение
-        if (!isCollidingCircleSquare(ball, player)) {
-            return false;
-        }
+    collisionResolving(collisions) {
+        collisions.forEach((collision) => {
+            if (config.loggingEnabled) console.log(collision.type);
 
-        // Определяем ближайшую точку на квадрате
-        const nearestX = Math.max(player.x, Math.min(ball.x, player.x + player.size));
-        const nearestY = Math.max(player.y, Math.min(ball.y, player.y + player.size));
+            switch (collision.type) {
+                // ball x walls
+                case 'ball x top wall':
+                    this.ball.y = this.ball.radius + 1;
+                    this.ball.dy = -this.ball.dy;
+                    break;
 
-        // Вычисляем вектор столкновения
-        const collisionVectorX = ball.x - nearestX;
-        const collisionVectorY = ball.y - nearestY;
+                case 'ball x right wall':
+                    this.ball.x = this.gameField.width - this.ball.radius - 1;
+                    this.ball.dx = -this.ball.dx;
+                    break;
 
-        // Определяем сторону столкновения
-        if (Math.abs(collisionVectorX) > Math.abs(collisionVectorY)) {
-            // Столкновение с левой или правой стороны
-            if (collisionVectorX > 0) {
-                // Столкновение с левой стороны
-                ball.x = nearestX + ball.radius; // Перемещаем мяч вправо
-            } else {
-                // Столкновение с правой стороны
-                ball.x = nearestX - ball.radius; // Перемещаем мяч влево
+                case 'ball x bottom wall':
+                    this.ball.y = this.gameField.height - this.ball.radius - 1;
+                    this.ball.dy = -this.ball.dy;
+                    break;
+
+                case 'ball x left wall':
+                    this.ball.x = this.ball.radius + 1;
+                    this.ball.dx = -this.ball.dx;
+                    break;
+
+                // ball x players
+                case 'ball x player top':
+                    this.ball.y = collision.player.top - this.ball.radius - 1;
+                    this.ball.dy = -this.ball.dy;
+                    break;
+
+                case 'ball x player right':
+                    this.ball.x = collision.player.right + this.ball.radius + 1;
+                    this.ball.dx = -this.ball.dx;
+                    break;
+
+                case 'ball x player bottom':
+                    this.ball.y = collision.player.bottom + this.ball.radius + 1;
+                    this.ball.dy = -this.ball.dy;
+                    break;
+
+                case 'ball x player left':
+                    this.ball.x = collision.player.left - this.ball.radius - 1;
+                    this.ball.dx = -this.ball.dx;
+                    break;
             }
-            // Изменяем направление движения мяча по оси X
-            ball.dx = -ball.dx; // Отскок
-        } else {
-            // Столкновение с верхней или нижней стороны
-            if (collisionVectorY > 0) {
-                // Столкновение с верхней стороны
-                ball.y = nearestY + ball.radius; // Перемещаем мяч вниз
-            } else {
-                // Столкновение с нижней стороны
-                ball.y = nearestY - ball.radius; // Перемещаем мяч вверх
-            }
-            // Изменяем направление движения мяча по оси Y
-            ball.dy = -ball.dy; // Отскок
-        }
+        });
+    }
 
-        return true;
+    defaultUpdate() {
+        // update ball position
+        this.ball.update();
+
+        // update ai players' position
+        const bots = this.players.filter((player) => player.isControlledByAI);
+        bots.forEach((bot) => {
+            const { x, y } = bot.update(this.ball);
+            bot.y = Math.max(
+                this.gameField.playerZone.y,
+                Math.min(
+                    y,
+                    this.gameField.playerZone.y + this.gameField.playerZone.height - bot.size
+                )
+            ); // Keep within field boundaries
+        });
     }
 
     draw() {
-        this.ctx.clearRect(0, 0, this.gameField.width, this.gameField.height); // clear all
-        this.gameField.draw(this.ctx);
-        this.goalAreas.forEach((goalArea) => goalArea.draw(this.ctx));
-        this.players.forEach((player) => player.draw(this.ctx));
-        this.ball.draw(this.ctx);
+        // clear
+        this.ctx.clearRect(0, 0, this.gameField.width, this.gameField.height);
+
+        // draw objects
+        this.visibles.forEach((visible) => visible.draw(this.ctx));
+
+        if (this.collisions !== undefined) {
+            this.collisions.forEach((collision) => {
+                this.ctx.fillStyle = 'red';
+                this.ctx.fillRect(collision.x, collision.y, 5, 5);
+            });
+        }
+
         this.drawScore();
     }
 
     drawScore() {
         let newText = `Score: ${this.score1} - ${this.score2}`;
         if (this.isPaused) newText += ' (paused)';
-        this.ctx.fillText(newText, this.gameField.width / 2 - 30, 20);
+        this.ctx.fillStyle = 'white';
+        this.ctx.fillText(newText, this.gameField.width / 2 - 30, 12);
     }
 
-    detectGoal() {
+    resolveGoals() {
         if (this.goalAreaLeft.checkGoal(this.ball)) {
             this.score2++;
             return true;
         }
         if (this.goalAreaRight.checkGoal(this.ball)) {
             this.score1++;
-            return true;
-        }
-        return false;
-    }
-
-    detectBallCollisionWithWalls() {
-        if (
-            this.ball.bottom >= this.gameField.height || // bottom border collision
-            this.ball.top <= 0 // top border col
-        ) {
-            this.ball.dy *= -1; // Bounce the ball
-            return true;
-        }
-        if (
-            this.ball.left <= 0 || // left bord
-            this.ball.right > this.gameField.width // right b
-        ) {
-            this.ball.dx *= -1; // Bounce the ball
             return true;
         }
         return false;
@@ -289,13 +374,9 @@ class Game {
                 ); // Move down
                 break;
             case 'KeyP':
-                this.togglePause();
+                this.isPaused = !this.isPaused;
                 break;
         }
-    }
-
-    togglePause() {
-        this.isPaused = !this.isPaused;
     }
 }
 

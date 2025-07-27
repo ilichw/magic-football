@@ -9,14 +9,15 @@ export const config = {
     /* game field options */
     fieldHeight: 480, // (px)
     fieldWidth: 640, // (px)
+    playerZoneBorderColor: 'white',
 
     /* goal area options */
     goalAreaHeight: 100, // (px)
     goalAreaWidth: 10, // (px)
 
     /* ball options */
-    ballSize: 10, // Default ball size (px)
-    ballSpeed: 8, // Default ball speed (px)
+    ballSize: 20, // Default ball size (px) ! not radius !
+    ballSpeed: 5, // Default ball speed (px)
 
     /* player options */
     playerSize: 50, // Default player size (px)
