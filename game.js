@@ -5,11 +5,16 @@ import { GoalArea } from './goalArea.js';
 import { GameField } from './gameField.js';
 import { SoundEngine } from './soundEngine.js';
 import { getRandomElement } from './helpers.js';
+import { Attack } from './spell.js';
+
+function slowdownAttack() {
+    return new Attack('Slowdown', 'slowdown', 1000);
+}
 
 class Game {
     constructor() {
         // visible objects are drawn on each step of the game loop
-        this.visibles = [];
+        this.visibleObjects = [];
 
         // static objects
         // (never update their position)
@@ -25,7 +30,7 @@ class Game {
 
         // add game field to static and visible objects
         this.static.push(this.gameField);
-        this.visibles.push(this.gameField);
+        this.visibleObjects.push(this.gameField);
 
         this.goalAreaLeft = new GoalArea(
             /* x */ 0,
@@ -45,7 +50,7 @@ class Game {
 
         // add goal areas to static and visible objects
         this.static.push(...this.goalAreas);
-        this.visibles.push(...this.goalAreas);
+        this.visibleObjects.push(...this.goalAreas);
 
         // dynamic objects
         // (may update their position on each step of the game loop)
@@ -61,38 +66,44 @@ class Game {
 
         // add ball to dynamic and visible objects
         this.dynamic.push(this.ball);
-        this.visibles.push(this.ball);
+        this.visibleObjects.push(this.ball);
 
-        const player1Color = getRandomElement(config.playerColors);
+        const player1Color = getRandomElement(config.player.colors);
         this.player1 = new PlayerAI(
-            /* x */ 50,
+            /* x */ config.player.startPos,
             /* y */ this.gameField.height / 2,
-            config.playerSize,
-            config.playerSpeed,
+            /* height */ config.player.size,
+            /* width */ config.player.size,
+            config.player.speed,
             'player 1',
             player1Color,
-            getRandomElement(config.playerDifficultyLevels)
+            [slowdownAttack()],
+            getRandomElement(config.player.difficultyLevels)
         );
         this.score1 = 0;
 
-        const filteredColors = config.playerColors.filter((color) => color !== player1Color);
-        this.player2 = config.allBots
+        const filteredColors = config.player.colors.filter((color) => color !== player1Color);
+        this.player2 = config.debug.allBots
             ? new PlayerAI(
-                  /* x */ this.gameField.width - 50 - config.playerSize,
+                  /* x */ this.gameField.width - config.player.startPos - config.player.size,
                   /* y */ this.gameField.height / 2,
-                  config.playerSize,
-                  config.playerSpeed,
+                  config.player.size,
+                  config.player.size,
+                  config.player.speed,
                   'player 2',
                   getRandomElement(filteredColors),
-                  getRandomElement(config.playerDifficultyLevels)
+                  [slowdownAttack()],
+                  getRandomElement(config.player.difficultyLevels)
               )
             : new Player(
-                  /* x */ this.gameField.width - 50 - config.playerSize,
+                  /* x */ this.gameField.width - config.player.startPos - config.player.size,
                   /* y */ this.gameField.height / 2,
-                  config.playerSize,
-                  config.playerSpeed,
+                  config.player.size,
+                  config.player.size,
+                  config.player.speed,
                   'player 2',
-                  getRandomElement(filteredColors)
+                  getRandomElement(filteredColors),
+                  [slowdownAttack()]
               );
         this.score2 = 0;
 
@@ -103,7 +114,7 @@ class Game {
 
         // add all players to dynamic and visible objects
         this.dynamic.push(...this.players);
-        this.visibles.push(...this.players);
+        this.visibleObjects.push(...this.players);
 
         // init sound engine
         this.soundEngine = new SoundEngine(config.soundMap, config.soundOn);
@@ -120,18 +131,15 @@ class Game {
         this.celebratingDuration = config.gameCelebratingDuration;
         this.countdownDuration = config.countdownDuration;
 
-        // start game
-        this.ctx = this.initCanvasContext('2d');
-        this.gameLoop();
+        // canvas props
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = null;
     }
 
-    initEventListeners() {
+    start() {
         document.addEventListener('keydown', (event) => this.handleKeydownEvent(event));
-    }
-
-    initCanvasContext(contextType) {
-        const canvas = document.getElementById('gameCanvas');
-        return canvas.getContext(contextType);
+        this.ctx = this.canvas.getContext('2d');
+        this.gameLoop();
     }
 
     gameLoop() {
@@ -166,10 +174,28 @@ class Game {
         } else {
             this.defaultUpdate();
         }
+
+        // attacking
+        [
+            {
+                player: this.player1,
+                direction: 'right',
+            },
+            {
+                player: this.player2,
+                direction: 'left',
+            },
+        ].forEach(({ player, direction }) => {
+            const spell = player.fire(0, direction);
+            if (spell) {
+                this.spells.push(spell);
+                this.visibleObjects.push(spell);
+            }
+        });
     }
 
     checkGameOver() {
-        if (config.endlessGame) return false;
+        if (config.debug.endlessGame) return false;
         return this.score1 >= config.finalScore || this.score2 >= config.finalScore;
     }
 
@@ -186,9 +212,16 @@ class Game {
         const ballWallCollisions = this.checkBallWallCollision(this.ball, this.gameField);
         collisions.push(...ballWallCollisions);
 
+        this.spells.forEach((spell) => {
+            const spellWallCollisions = this.checkSpellWallCollision(spell, this.gameField);
+            collisions.push(...spellWallCollisions);
+        });
+
         this.players.forEach((player) => {
             const ballPlayerCollisions = this.checkBallPlayerCollision(this.ball, player);
+            const spellPlayerCollisions = this.checkSpellPlayerCollision(this.spells, player);
             collisions.push(...ballPlayerCollisions);
+            collisions.push(...spellPlayerCollisions);
         });
 
         return collisions;
@@ -234,9 +267,36 @@ class Game {
         return collisions;
     }
 
+    checkSpellWallCollision(spell, gameField) {
+        const collisions = [];
+
+        if (
+            spell.top <= 0 ||
+            spell.right >= gameField.width ||
+            spell.bottom >= gameField.height ||
+            spell.left <= 0
+        ) {
+            collisions.push({ type: 'spell x wall', spell });
+        }
+
+        return collisions;
+    }
+
+    checkSpellPlayerCollision(spells, player) {
+        const collisions = [];
+
+        spells.forEach((spell) => {
+            if (spell.isColliding(player)) {
+                collisions.push({ type: 'spell x player', player, spell });
+            }
+        });
+
+        return collisions;
+    }
+
     collisionResolving(collisions) {
         collisions.forEach((collision) => {
-            if (config.loggingEnabled) console.log(collision.type);
+            if (config.debug.loggingEnabled) console.log(collision.type);
 
             switch (collision.type) {
                 // ball x walls
@@ -280,26 +340,70 @@ class Game {
                     this.ball.x = collision.player.left - this.ball.radius - 1;
                     this.ball.dx = -this.ball.dx;
                     break;
+
+                case 'spell x wall':
+                    // remove spell
+                    this.spells = this.spells.filter(
+                        (spell) => spell.id !== collision.spell.id
+                    );
+                    this.visibleObjects = this.visibleObjects.filter(
+                        (spell) => spell.id !== collision.spell.id
+                    );
+
+                    break;
+
+                // spell x player
+                case 'spell x player':
+                    // remove spell
+                    this.spells = this.spells.filter(
+                        (spell) => spell.id !== collision.spell.id
+                    );
+                    this.visibleObjects = this.visibleObjects.filter(
+                        (spell) => spell.id !== collision.spell.id
+                    );
+
+                    collision.player.getDamaged(collision.spell.type);
+                    break;
             }
         });
     }
 
     defaultUpdate() {
-        // update ball position
         this.ball.update();
 
-        // update ai players' position
-        const bots = this.players.filter((player) => player.isControlledByAI);
-        bots.forEach((bot) => {
-            const { x, y } = bot.update(this.ball);
-            bot.y = Math.max(
-                this.gameField.playerZone.y,
-                Math.min(
-                    y,
-                    this.gameField.playerZone.y + this.gameField.playerZone.height - bot.size
-                )
-            ); // Keep within field boundaries
+        this.spells.forEach((spell) => {
+            spell.update();
         });
+
+        // ai players
+        const bots = this.players.filter((player) => player.isControlledByAI);
+
+        const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
+        const updateBotPosition = (bot, x, y) => {
+            bot.x = clamp(
+                x,
+                this.gameField.playerZone.x,
+                this.gameField.playerZone.x + this.gameField.playerZone.width - bot.width
+            );
+            bot.y = clamp(
+                y,
+                this.gameField.playerZone.y,
+                this.gameField.playerZone.y + this.gameField.playerZone.height - bot.height
+            );
+        };
+
+        const fn = config.debug.enableHorizontalMovement
+            ? (bot) => {
+                  const { x, y } = bot.follow(this.ball);
+                  updateBotPosition(bot, x, y);
+              }
+            : (bot) => {
+                  const y = bot.followY(this.ball);
+                  updateBotPosition(bot, bot.x, y);
+              };
+
+        bots.forEach(fn);
     }
 
     draw() {
@@ -307,7 +411,7 @@ class Game {
         this.ctx.clearRect(0, 0, this.gameField.width, this.gameField.height);
 
         // draw objects
-        this.visibles.forEach((visible) => visible.draw(this.ctx));
+        this.visibleObjects.forEach((visibleObject) => visibleObject.draw(this.ctx));
 
         this.drawScore();
     }
@@ -358,7 +462,7 @@ class Game {
                 break;
             case 'KeyS':
                 this.player2.y = Math.min(
-                    this.gameField.height - this.player2.size,
+                    this.gameField.height - this.player2.height,
                     this.player2.y + this.player2.speed
                 ); // Move down
                 break;
@@ -371,4 +475,4 @@ class Game {
 
 // Start the game
 const game = new Game();
-game.initEventListeners();
+game.start();

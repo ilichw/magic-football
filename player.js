@@ -1,28 +1,17 @@
 // player.js
 
-export class Player {
-    constructor(x, y, size, speed, name, color) {
-        // coordinates
-        this.x = x;
-        this.y = y;
+import { Rect } from './rect.js';
 
-        // initial coordinates used in the reset() method
-        this.startX = x;
-        this.startY = y;
-
-        this.size = size;
+export class Player extends Rect {
+    constructor(x, y, height, width, speed, name, color, attacks) {
+        super(x, y, height, width, color);
         this.speed = speed;
         this.name = name;
-        this.color = color;
+        this.attacks = attacks;
     }
 
     get isControlledByAI() {
         return false;
-    }
-
-    reset() {
-        this.x = this.startX;
-        this.y = this.startY;
     }
 
     draw(ctx) {
@@ -32,32 +21,37 @@ export class Player {
 
         // draw skin
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.size, this.size);
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
-    get left() {
-        return this.x;
+    fire(attackId, direction) {
+        const attack = this.attacks[attackId]; // Например, первое заклинание
+        return attack.cast(this, direction);
     }
-    get right() {
-        return this.x + this.size;
-    }
-    get top() {
-        return this.y;
-    }
-    get bottom() {
-        return this.y + this.size;
-    }
-    get height() {
-        return this.size;
-    }
-    get width() {
-        return this.size;
+
+    getDamaged(attackType) {
+        const originalColor = this.color;
+        this.color = 'red'; // Изменение цвета на красный при попадании
+
+        setTimeout(() => {
+            this.color = originalColor; // Возврат к оригинальному цвету
+        }, 200); // Время эффекта в миллисекундах
+
+        switch (attackType) {
+            case 'slowdown':
+                const originalSpeed = this.speed;
+                this.speed *= 0.25; // speed -50%
+                setTimeout(() => {
+                    this.speed = originalSpeed; // Возврат к оригинальному цвету
+                }, 5000); // Время эффекта в миллисекундах
+                break;
+        }
     }
 }
 
 export class PlayerAI extends Player {
-    constructor(x, y, size, speed, name, color, difficulty) {
-        super(x, y, size, speed, name, color);
+    constructor(x, y, height, width, speed, name, color, attacks, difficulty) {
+        super(x, y, height, width, speed, name, color, attacks);
         this.difficulty = difficulty;
     }
 
@@ -73,32 +67,75 @@ export class PlayerAI extends Player {
 
         // draw skin
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.size, this.size);
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
-    update(ball) {
-        let moveTowardsBall;
+    follow(target) {
+        const newPosition = { x: this.x, y: this.y };
+
+        let moveTowards;
 
         switch (this.difficulty) {
             case 'easy':
-                moveTowardsBall = Math.random() < 0.2; // 20% chance to move towards the ball
+                moveTowards = Math.random() < 0.2; // 20% chance to move towards the ball
                 break;
             case 'normal':
-                moveTowardsBall = Math.random() < 0.5; // 50% chance to move towards the ball
+                moveTowards = Math.random() < 0.5; // 50% chance to move towards the ball
                 break;
             case 'hard':
-                moveTowardsBall = Math.random() < 0.8; // 80% chance to move towards the ball
+                moveTowards = Math.random() < 0.8; // 80% chance to move towards the ball
                 break;
         }
 
-        if (moveTowardsBall) {
-            if (ball.y < this.y) {
-                this.y -= this.speed; // Move up
-            } else if (ball.y > this.y + this.size) {
-                this.y += this.speed; // Move down
+        if (!moveTowards) return newPosition;
+
+        // Рассчитываем направление к цели
+        const dx = target.x - this.x;
+        const dy = target.y - this.y;
+
+        // Вычисляем угол для нормализации
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0) {
+            // Нормализуем вектор направления
+            const normalizedDx = dx / distance;
+            const normalizedDy = dy / distance;
+
+            // Обновляем позицию игрока
+            newPosition.x += normalizedDx * this.speed;
+            newPosition.y += normalizedDy * this.speed;
+        }
+
+        return newPosition;
+    }
+
+    escape(target) {}
+
+    keepNear(target) {}
+
+    followY(target) {
+        let moveTowards;
+
+        switch (this.difficulty) {
+            case 'easy':
+                moveTowards = Math.random() < 0.2; // 20% chance to move towards the ball
+                break;
+            case 'normal':
+                moveTowards = Math.random() < 0.5; // 50% chance to move towards the ball
+                break;
+            case 'hard':
+                moveTowards = Math.random() < 0.8; // 80% chance to move towards the ball
+                break;
+        }
+
+        if (moveTowards) {
+            if (target.y < this.y) {
+                return this.y - this.speed; // Move up
+            } else if (target.y > this.y + this.height) {
+                return this.y + this.speed; // Move down
             }
         }
 
-        return this;
+        return this.y;
     }
 }

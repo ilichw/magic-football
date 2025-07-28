@@ -19,21 +19,23 @@ export const config = {
     ballSize: 20, // Default ball size (px) ! not radius !
     ballSpeed: 5, // Default ball speed (px)
 
-    /* player options */
-    playerSize: 50, // Default player size (px)
-    playerSpeed: 10, // Default player speed (px)
-    playerDifficultyLevels: ['easy', 'normal', 'hard'],
+    player: {
+        size: 50, // Default player size (px)
+        speed: 10, // Default player speed (px)
+        startPos: 50, // distance from field border on the game start
+        difficultyLevels: ['easy', 'normal', 'hard'],
+        colors: [
+            'aliceblue',
+            'antiquewhite',
+            'aquamarine',
+            'blanchedalmond',
+            'burlywood',
+            'cadetblue',
+        ],
+    },
 
     /* color options */
     ballColor: 'white',
-    playerColors: [
-        'aliceblue',
-        'antiquewhite',
-        'aquamarine',
-        'blanchedalmond',
-        'burlywood',
-        'cadetblue',
-    ],
     fieldColor: 'green',
 
     /* sound options */
@@ -43,8 +45,10 @@ export const config = {
         collision: '',
     },
 
-    /* debug options */
-    loggingEnabled: true, // Toggle logging on/off
-    endlessGame: true,
-    allBots: true,
+    debug: {
+        loggingEnabled: true, // Toggle logging on/off
+        endlessGame: true,
+        allBots: true,
+        enableHorizontalMovement: false,
+    },
 };
