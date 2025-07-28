@@ -6,18 +6,24 @@ export const config = {
     countdownDuration: 3000, // Duration of a countdown before a round starts (ms)
     finalScore: 5,
 
-    /* game field options */
-    fieldHeight: 480, // (px)
-    fieldWidth: 640, // (px)
+    gameField: {
+        width: 640,
+        height: 480,
+        color: 'green',
+    },
+
     playerZoneBorderColor: 'white',
 
-    /* goal area options */
-    goalAreaHeight: 100, // (px)
-    goalAreaWidth: 10, // (px)
+    goalArea: {
+        width: 10,
+        height: 100,
+    },
 
-    /* ball options */
-    ballSize: 20, // Default ball size (px) ! not radius !
-    ballSpeed: 5, // Default ball speed (px)
+    ball: {
+        size: 20, // not radius
+        speed: 5,
+        color: 'white',
+    },
 
     player: {
         size: 50, // Default player size (px)
@@ -33,10 +39,6 @@ export const config = {
             'cadetblue',
         ],
     },
-
-    /* color options */
-    ballColor: 'white',
-    fieldColor: 'green',
 
     /* sound options */
     soundOn: false, // Toggle sound on/off

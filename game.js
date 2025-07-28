@@ -21,10 +21,10 @@ class Game {
         this.static = [];
 
         this.gameField = new GameField(
-            config.fieldHeight,
-            config.fieldWidth,
-            config.ballSize, // player zone offset
-            config.fieldColor,
+            config.gameField.height,
+            config.gameField.width,
+            config.ball.size, // player zone offset
+            config.gameField.color,
             config.playerZoneBorderColor
         );
 
@@ -34,16 +34,16 @@ class Game {
 
         this.goalAreaLeft = new GoalArea(
             /* x */ 0,
-            /* y */ (this.gameField.height - config.goalAreaHeight) / 2,
-            /* width */ config.ballSize,
-            config.goalAreaHeight
+            /* y */ (this.gameField.height - config.goalArea.height) / 2,
+            /* width */ config.ball.size,
+            config.goalArea.height
         );
 
         this.goalAreaRight = new GoalArea(
-            this.gameField.width - config.ballSize,
-            (this.gameField.height - config.goalAreaHeight) / 2,
-            config.ballSize,
-            config.goalAreaHeight
+            this.gameField.width - config.ball.size,
+            (this.gameField.height - config.goalArea.height) / 2,
+            config.ball.size,
+            config.goalArea.height
         );
 
         this.goalAreas = [this.goalAreaLeft, this.goalAreaRight];
@@ -59,9 +59,9 @@ class Game {
         this.ball = new Ball(
             /* x */ this.gameField.width / 2,
             /* y */ this.gameField.height / 2,
-            /* radius */ config.ballSize / 2,
-            config.ballSpeed,
-            config.ballColor
+            /* radius */ config.ball.size / 2,
+            config.ball.speed,
+            config.ball.color
         );
 
         // add ball to dynamic and visible objects
