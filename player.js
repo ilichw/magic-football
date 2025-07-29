@@ -3,25 +3,37 @@
 import { Rect } from './rect.js';
 
 export class Player extends Rect {
-    constructor(x, y, height, width, speed, name, color, attacks) {
+    constructor(skins, x, y, height, width, speed, name, color, attacks) {
         super(x, y, height, width, color);
         this.speed = speed;
         this.name = name;
         this.attacks = attacks;
+
+        // skins logic
+        this.skins = skins;
+        this.activeSkin = this.skins ? this.skins[0] : null;
     }
 
     get isControlledByAI() {
         return false;
     }
 
+    get playerNameText() {
+        return this.name;
+    }
+
     draw(ctx) {
         // draw player's name
         ctx.fillStyle = 'white';
-        ctx.fillText(this.name, this.x, this.y - 10);
+        ctx.fillText(this.playerNameText, this.x, this.y - 10);
 
         // draw skin
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        if (this.activeSkin !== null) {
+            ctx.drawImage(this.activeSkin, this.x, this.y, this.width, this.height);
+        } else {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
     }
 
     fire(attackId, direction) {
@@ -32,9 +44,12 @@ export class Player extends Rect {
     getDamaged(attackType) {
         const originalColor = this.color;
         this.color = 'red'; // Изменение цвета на красный при попадании
+        const originalActiveSkin = this.activeSkin;
+        this.activeSkin = this.skins[1];
 
         setTimeout(() => {
             this.color = originalColor; // Возврат к оригинальному цвету
+            this.activeSkin = originalActiveSkin; // Возврат к оригинальному цвету
         }, 200); // Время эффекта в миллисекундах
 
         switch (attackType) {
@@ -50,8 +65,8 @@ export class Player extends Rect {
 }
 
 export class PlayerAI extends Player {
-    constructor(x, y, height, width, speed, name, color, attacks, difficulty) {
-        super(x, y, height, width, speed, name, color, attacks);
+    constructor(skins, x, y, height, width, speed, name, color, attacks, difficulty) {
+        super(skins, x, y, height, width, speed, name, color, attacks);
         this.difficulty = difficulty;
     }
 
@@ -59,15 +74,8 @@ export class PlayerAI extends Player {
         return true;
     }
 
-    draw(ctx) {
-        // draw player's name
-        ctx.fillStyle = 'white';
-        const text = `${this.name} (${this.difficulty})`;
-        ctx.fillText(text, this.x, this.y - 10);
-
-        // draw skin
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+    get playerNameText() {
+        return `${this.name} (${this.difficulty})`;
     }
 
     follow(target) {

@@ -13,6 +13,10 @@ function slowdownAttack() {
     return new Attack('Slowdown', 'slowdown', 1000);
 }
 
+const [botSkin, botDamagedSkin] = [new Image(), new Image()];
+botSkin.src = '/assets/bot.png';
+botDamagedSkin.src = '/assets/bot-damaged.png';
+
 class Game {
     constructor() {
         // visible objects
@@ -79,6 +83,7 @@ class Game {
 
         const player1Color = getRandomElement(this.settings.player.colors);
         this.player1 = new PlayerAI(
+            [botSkin, botDamagedSkin],
             /* x */ this.settings.player.startPos,
             /* y */ this.gameField.height / 2,
             /* height */ this.settings.player.size,
@@ -95,6 +100,7 @@ class Game {
         );
         this.player2 = this.settings.debug.allBots
             ? new PlayerAI(
+                  [botSkin, botDamagedSkin],
                   /* x */ this.gameField.width -
                       this.settings.player.startPos -
                       this.settings.player.size,
@@ -108,6 +114,7 @@ class Game {
                   getRandomElement(this.settings.player.difficultyLevels)
               )
             : new Player(
+                  null,
                   /* x */ this.gameField.width -
                       this.settings.player.startPos -
                       this.settings.player.size,
