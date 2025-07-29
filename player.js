@@ -43,7 +43,7 @@ export class Player extends Rect {
                 this.speed *= 0.25; // speed -50%
                 setTimeout(() => {
                     this.speed = originalSpeed; // Возврат к оригинальному цвету
-                }, 5000); // Время эффекта в миллисекундах
+                }, 2000); // Время эффекта в миллисекундах
                 break;
         }
     }

@@ -30,17 +30,16 @@ export class Attack {
 
     cast(caster, direction) {
         if (this.canCast(Date.now())) {
-            // Логика применения заклинания
-            // Например, нанести урон
-            // target.takeDamage(this.damage);
+            const spellSize = 8;
+            const spellSpeed = 10;
 
             this.lastCastTime = Date.now();
 
-            const spellX = direction === 'left' ? caster.left - 8 : caster.right;
+            const spellX = direction === 'left' ? caster.left - spellSize : caster.right;
             const spellY = caster.y + caster.height / 2;
-            const speed = direction === 'left' ? -10 : 10;
+            const speed = direction === 'left' ? -spellSpeed : spellSpeed;
 
-            return new Spell(spellX, spellY, 8, 8, 'red', this.type, speed);
+            return new Spell(spellX, spellY, spellSize, spellSize, 'red', this.type, speed);
         }
 
         return null;

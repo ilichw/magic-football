@@ -1,18 +1,17 @@
 // soundEngine.js
 
-export class SoundEngine {
-    constructor(soundMap, soundOn) {
-        this.soundMap = soundMap;
-        this.soundOn = soundOn;
+export class SoundManager {
+    constructor(game) {
+        this.game = game;
 
-        if (this.soundOn) {
+        if (this.game.settings.soundOn) {
             this.goalSound = new Audio('path/to/goal-sound.mp3');
             this.collisionSound = new Audio('path/to/collision-sound.mp3');
         }
     }
 
     play(soundName) {
-        if (!this.soundOn) {
+        if (!this.game.settings.soundOn) {
             console.log(`sound: ${soundName}`);
         } else {
             let sound;
