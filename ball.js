@@ -1,7 +1,9 @@
 // ball.js
 
 export class Ball {
-    constructor(x, y, radius, speed, color) {
+    constructor(skin, x, y, radius, speed, color) {
+        this.skin = skin;
+
         // coordinates
         this.x = x;
         this.y = y;
@@ -36,10 +38,14 @@ export class Ball {
     }
 
     draw(ctx) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
+        if (this.skin) {
+            ctx.drawImage(this.skin, this.left, this.top, this.size, this.size);
+        } else {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
     }
 
     // these props are for collision detection

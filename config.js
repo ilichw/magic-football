@@ -20,7 +20,7 @@ export const config = {
     },
 
     ball: {
-        size: 20, // not radius
+        size: 20, // radius 10
         speed: 5,
         color: 'white',
     },

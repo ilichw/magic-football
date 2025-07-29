@@ -13,9 +13,14 @@ function slowdownAttack() {
     return new Attack('Slowdown', 'slowdown', 1000);
 }
 
-const [botSkin, botDamagedSkin] = [new Image(), new Image()];
+const botSkin = new Image();
 botSkin.src = '/assets/bot.png';
+
+const botDamagedSkin = new Image();
 botDamagedSkin.src = '/assets/bot-damaged.png';
+
+const ballSkin = new Image();
+ballSkin.src = '/assets/ball.png';
 
 class Game {
     constructor() {
@@ -70,6 +75,7 @@ class Game {
 
         // ball
         this.ball = new Ball(
+            ballSkin,
             /* x */ this.gameField.width / 2,
             /* y */ this.gameField.height / 2,
             /* radius */ this.settings.ball.size / 2,
