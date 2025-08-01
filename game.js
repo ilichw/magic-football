@@ -24,6 +24,8 @@ ballSkin.src = '/assets/ball.png';
 
 class Game {
     constructor() {
+        this.imageSources = null;
+
         // visible objects
         // objects that are drawn on each step of the game loop
         this.visibleObjects = [];
@@ -75,7 +77,6 @@ class Game {
 
         // ball
         this.ball = new Ball(
-            ballSkin,
             /* x */ this.gameField.width / 2,
             /* y */ this.gameField.height / 2,
             /* radius */ this.settings.ball.size / 2,
@@ -89,7 +90,6 @@ class Game {
 
         const player1Color = getRandomElement(this.settings.player.colors);
         this.player1 = new PlayerAI(
-            [botSkin, botDamagedSkin],
             /* x */ this.settings.player.startPos,
             /* y */ this.gameField.height / 2,
             /* height */ this.settings.player.size,
@@ -106,7 +106,6 @@ class Game {
         );
         this.player2 = this.settings.debug.allBots
             ? new PlayerAI(
-                  [botSkin, botDamagedSkin],
                   /* x */ this.gameField.width -
                       this.settings.player.startPos -
                       this.settings.player.size,
@@ -120,7 +119,6 @@ class Game {
                   getRandomElement(this.settings.player.difficultyLevels)
               )
             : new Player(
-                  null,
                   /* x */ this.gameField.width -
                       this.settings.player.startPos -
                       this.settings.player.size,
@@ -167,6 +165,21 @@ class Game {
         // canvas props
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = null;
+    }
+
+    setImageSources(imageSources) {
+        // init images
+        this.imageSources = imageSources;
+
+        // create skin manager and move to
+        const playerSkins = [
+            this.imageSources['/assets/bot.png'],
+
+            this.imageSources['/assets/bot-damaged.png'],
+        ];
+        this.players.forEach((player) => player.setSkins(playerSkins));
+
+        this.ball.setSkin(this.imageSources['/assets/ball.png']);
     }
 
     start() {
@@ -347,4 +360,32 @@ class Game {
 
 // Start the game
 const game = new Game();
-game.start();
+// game.start();
+const images = {};
+const imageSources = [
+    '/assets/bot.png',
+    '/assets/bot-damaged.png',
+    '/assets/ball.png',
+];
+
+function loadImages(sources) {
+    return new Promise((resolve) => {
+        let loadedImages = 0;
+        sources.forEach((src) => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => {
+                images[src] = img;
+                loadedImages++;
+                if (loadedImages === sources.length) {
+                    resolve();
+                }
+            };
+        });
+    });
+}
+
+loadImages(imageSources).then(() => {
+    game.setImageSources(images);
+    game.start(); // Запускаем игру после загрузки изображений
+});

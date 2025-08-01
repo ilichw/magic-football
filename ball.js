@@ -1,8 +1,8 @@
 // ball.js
 
 export class Ball {
-    constructor(skin, x, y, radius, speed, color) {
-        this.skin = skin;
+    constructor(x, y, radius, speed, color) {
+        this.skin = null;
 
         // coordinates
         this.x = x;
@@ -25,6 +25,10 @@ export class Ball {
     update() {
         this.x += this.dx;
         this.y += this.dy;
+    }
+
+    setSkin(skin) {
+        this.skin = skin;
     }
 
     reset() {

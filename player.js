@@ -3,15 +3,20 @@
 import { Rect } from './rect.js';
 
 export class Player extends Rect {
-    constructor(skins, x, y, height, width, speed, name, color, attacks) {
+    constructor(x, y, height, width, speed, name, color, attacks) {
         super(x, y, height, width, color);
         this.speed = speed;
         this.name = name;
         this.attacks = attacks;
 
         // skins logic
+        this.skins = [];
+        this.activeSkin = null;
+    }
+
+    setSkins(skins) {
         this.skins = skins;
-        this.activeSkin = this.skins ? this.skins[0] : null;
+        this.activeSkin = skins[0];
     }
 
     get isControlledByAI() {
@@ -65,8 +70,8 @@ export class Player extends Rect {
 }
 
 export class PlayerAI extends Player {
-    constructor(skins, x, y, height, width, speed, name, color, attacks, difficulty) {
-        super(skins, x, y, height, width, speed, name, color, attacks);
+    constructor(x, y, height, width, speed, name, color, attacks, difficulty) {
+        super(x, y, height, width, speed, name, color, attacks);
         this.difficulty = difficulty;
     }
 
