@@ -1,3 +1,5 @@
+import { AnimatedObject } from './animatedObject.js';
+
 export class CollisionManager {
     constructor(game) {
         this.game = game;
@@ -152,6 +154,21 @@ export class CollisionManager {
 
                 // spell x player
                 case 'spell x player':
+                    // process player's damage
+                    collision.player.getDamaged(collision.spell.type);
+
+                    // start animation of blowing up
+                    const newAnimation = new AnimatedObject(
+                        this.game.hitAnimationFrames,
+                        collision.spell.left,
+                        collision.spell.top,
+                        20,
+                        20
+                    );
+
+                    this.game.animations.push(newAnimation);
+                    this.game.visibleObjects.push(newAnimation);
+
                     // remove spell
                     this.game.spells = spells.filter(
                         (spell) => spell.id !== collision.spell.id
@@ -159,8 +176,6 @@ export class CollisionManager {
                     this.game.visibleObjects = visibleObjects.filter(
                         (spell) => spell.id !== collision.spell.id
                     );
-
-                    collision.player.getDamaged(collision.spell.type);
                     break;
             }
         });

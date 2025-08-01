@@ -8,27 +8,30 @@ import { Attack } from './spell.js';
 import { CollisionManager } from './collisionManager.js';
 import { ScoreManager } from './scoreManager.js';
 import { SoundManager } from './soundManager.js';
+import { AnimatedObject } from './animatedObject.js';
 
+// move to attack logic
 function slowdownAttack() {
     return new Attack('Slowdown', 'slowdown', 1000);
 }
 
-const botSkin = new Image();
-botSkin.src = '/assets/bot.png';
-
-const botDamagedSkin = new Image();
-botDamagedSkin.src = '/assets/bot-damaged.png';
-
-const ballSkin = new Image();
-ballSkin.src = '/assets/ball.png';
+function createBlowAnimation() {
+    return new AnimatedObject();
+}
 
 class Game {
     constructor() {
         this.imageSources = null;
 
+        // create separate animations logic and move there
+        this.hitAnimationFrames = null;
+
         // visible objects
         // objects that are drawn on each step of the game loop
         this.visibleObjects = [];
+
+        // animations
+        this.animations = [];
 
         // static objects
         // (never update their position)
@@ -180,6 +183,14 @@ class Game {
         this.players.forEach((player) => player.setSkins(playerSkins));
 
         this.ball.setSkin(this.imageSources['/assets/ball.png']);
+
+        // create separate animations logic and move there
+        this.hitAnimationFrames = [
+            this.imageSources['/assets/attack-blows-01.png'],
+            this.imageSources['/assets/attack-blows-02.png'],
+            this.imageSources['/assets/attack-blows-03.png'],
+            this.imageSources['/assets/attack-blows-04.png'],
+        ];
     }
 
     start() {
@@ -243,6 +254,17 @@ class Game {
             if (spell) {
                 this.spells.push(spell);
                 this.visibleObjects.push(spell);
+            }
+        });
+
+        // update animation
+        this.animations.forEach((animation) => {
+            // check if animation stopped if true remove it
+            if (animation.stopped) {
+                this.animations = this.animations.filter((a) => a.id !== animation.id);
+                this.visibleObjects = this.visibleObjects.filter((a) => a.id !== animation.id);
+            } else {
+                animation.update();
             }
         });
     }
@@ -360,12 +382,17 @@ class Game {
 
 // Start the game
 const game = new Game();
-// game.start();
+
+// images preload
 const images = {};
 const imageSources = [
     '/assets/bot.png',
     '/assets/bot-damaged.png',
     '/assets/ball.png',
+    '/assets/attack-blows-01.png',
+    '/assets/attack-blows-02.png',
+    '/assets/attack-blows-03.png',
+    '/assets/attack-blows-04.png',
 ];
 
 function loadImages(sources) {
